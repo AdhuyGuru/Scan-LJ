@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Realtime Scanner LJK FINAL</title>
+<title>Realtime Scanner LJK Otomatis</title>
 
 <style>
 
@@ -19,7 +19,7 @@ body{
 }
 
 .container{
-  max-width:1800px;
+  max-width:1700px;
   margin:auto;
   background:white;
   padding:20px;
@@ -54,6 +54,7 @@ canvas{
   left:0;
   width:100%;
   height:100%;
+  pointer-events:none;
 }
 
 .controls{
@@ -111,32 +112,53 @@ textarea{
   color:#1565c0;
 }
 
+.scan-area{
+  position:absolute;
+  border:4px dashed lime;
+  border-radius:20px;
+  top:18%;
+  left:5%;
+  width:90%;
+  height:62%;
+  box-shadow:0 0 20px lime;
+}
+
 </style>
 </head>
 <body>
 
 <div class="container">
 
-<h1>Realtime Scanner LJK FINAL</h1>
+<h1>Realtime Scanner LJK Otomatis</h1>
 
 <div class="info">
+
 <b>Cara Menggunakan:</b><br><br>
+
 1. Klik Aktifkan Kamera<br>
-2. Arahkan kamera ke LJK<br>
-3. Pastikan semua kotak merah pas di jawaban<br>
+2. Arahkan kamera ke lembar jawaban siswa<br>
+3. Pastikan seluruh jawaban berada di dalam kotak hijau<br>
 4. Klik Scan Jawaban<br>
-5. Copy hasil jawaban<br>
+5. Hasil otomatis muncul dan bisa dicopy<br>
+
 </div>
 
 <div class="video-wrapper">
+
 <video id="video" autoplay playsinline></video>
+
 <canvas id="overlay"></canvas>
+
+<div class="scan-area"></div>
+
 </div>
 
 <div class="controls">
+
 <button id="startButton">Aktifkan Kamera</button>
 <button id="scanButton">Scan Jawaban</button>
 <button id="copyButton">Copy Hasil</button>
+
 </div>
 
 <div class="status" id="status">
@@ -144,8 +166,11 @@ Menunggu kamera...
 </div>
 
 <div class="result-box">
+
 <h2>Hasil Jawaban</h2>
+
 <textarea id="resultText"></textarea>
+
 </div>
 
 </div>
@@ -185,8 +210,6 @@ document.getElementById('startButton').addEventListener('click', async ()=>{
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      drawGrid();
-
       statusText.innerHTML = 'Kamera aktif';
     }
   }
@@ -198,72 +221,13 @@ document.getElementById('startButton').addEventListener('click', async ()=>{
 });
 
 // =====================================
-// DRAW GRID
-// =====================================
-
-function drawGrid(){
-
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  const scaleX = canvas.width / 1600;
-  const scaleY = canvas.height / 900;
-
-  // POSISI FINAL YANG SUDAH DIPERBAIKI
-
-  const startX = 95 * scaleX;
-  const startY = 500 * scaleY;
-
-  // DIPERBAIKI AGAR NOMOR TIDAK MENUMPUK
-  const blockGap = 285 * scaleX;
-
-  const rowGap = 82 * scaleY;
-
-  const boxSize = 56 * scaleX;
-
-  const optionGap = 64 * scaleX;
-
-  ctx.strokeStyle = 'red';
-  ctx.lineWidth = 3;
-
-  let question = 1;
-
-  for(let block=0; block<5; block++){
-
-    const baseX = startX + (block * blockGap);
-
-    for(let row=0; row<5; row++){
-
-      const y = startY + (row * rowGap);
-
-      // NOMOR SOAL DIPINDAHKAN KE KIRI
-      ctx.fillStyle = 'yellow';
-      ctx.font = `${24 * scaleX}px Arial`;
-      ctx.fillText(
-        question,
-        baseX - (60 * scaleX),
-        y + (38 * scaleY)
-      );
-
-      // KOTAK A B C D
-      for(let opt=0; opt<4; opt++){
-
-        const x = baseX + (opt * optionGap);
-
-        ctx.strokeRect(x,y,boxSize,boxSize);
-      }
-
-      question++;
-    }
-  }
-}
-
-// =====================================
 // SCAN BUTTON
 // =====================================
 
 document.getElementById('scanButton').addEventListener('click', ()=>{
 
   if(!stream){
+
     alert('Aktifkan kamera terlebih dahulu');
     return;
   }
@@ -287,17 +251,28 @@ function scanAnswers(){
 
   let results = [];
 
-  const scaleX = canvas.width / 1600;
-  const scaleY = canvas.height / 900;
+  // =====================================
+  // AREA DETEKSI UTAMA
+  // =====================================
 
-  const startX = 95 * scaleX;
-  const startY = 500 * scaleY;
+  const scanX = canvas.width * 0.05;
+  const scanY = canvas.height * 0.18;
 
-  const blockGap = 285 * scaleX;
-  const rowGap = 82 * scaleY;
+  const scanWidth = canvas.width * 0.90;
+  const scanHeight = canvas.height * 0.62;
 
-  const boxSize = 56 * scaleX;
-  const optionGap = 64 * scaleX;
+  // =====================================
+  // GRID INTERNAL TIDAK DITAMPILKAN
+  // =====================================
+
+  const startX = scanX + (scanWidth * 0.02);
+  const startY = scanY + (scanHeight * 0.12);
+
+  const blockGap = scanWidth * 0.19;
+  const rowGap = scanHeight * 0.18;
+
+  const boxSize = scanWidth * 0.035;
+  const optionGap = scanWidth * 0.045;
 
   let questionNumber = 1;
 
@@ -386,7 +361,10 @@ function scanAnswers(){
 
       let selected = [];
 
-      // PG biasa
+      // =====================================
+      // PG BIASA
+      // =====================================
+
       if(questionNumber <= 20){
 
         if(
@@ -397,7 +375,10 @@ function scanAnswers(){
         }
       }
 
-      // PG kompleks
+      // =====================================
+      // PG KOMPLEKS
+      // =====================================
+
       else{
 
         candidates.forEach(c=>{
@@ -438,4 +419,5 @@ document.getElementById('copyButton').addEventListener('click', ()=>{
 
 </body>
 </html>
-
+✅ Support HP Android
+✅ Support laptop
